@@ -1,0 +1,173 @@
+package com.sample.rules
+
+import com.sample.alarme;
+import com.sample.intrusos;
+import com.sample.camara;
+import com.sample.animal;
+import com.sample.Divisao;
+import com.sample.somVidroPartir;
+import com.sample.codigo;
+import com.sample.ligacao;
+
+rule "Liga alarme se houver barulho de vidro a partir"
+salience 100
+    when
+        exists somVidroPartir()
+        $s: somVidroPartir(somdetetado == false)
+    then
+        insert(new alarme());//Liga alarme 
+        //$s.setsomdetetado(true);
+        //update($s);
+        System.out.println( "    Alarme ligado por causa de som de vidro a partir");
+end
+
+/////////////////////////////////////////////////////////////////////////////
+
+rule "intrusos se aprocima da casa"
+salience 96
+    when
+        $d: Divisao(nome == "quintal")
+        $i: intrusos(divisao == $d, detetado == false)
+        $cam: camara(divisao == $d, ligado == true)
+    then
+    retract($i);
+    System.out.println( "    pessoa aprocimace da casa");
+    System.out.println( "Mandar msg para o dono");
+end
+
+/////////////////////////////////////////////////////////////////////////////
+
+rule "Liga alarme se há intrusos e se ainda não tiver ligado por causa de som de vidro a partir"
+salience 90
+    when
+    	not somVidroPartir()
+        exists intrusos()//Há intrusos
+    then
+        insert(new alarme());//Liga alarme 
+        System.out.println( "    Alarme ligado por causa de intrusos");
+end
+
+
+
+rule "Detectar intrusos no total"
+salience 85
+    when
+        exists intrusos()//Há intrusos
+    then
+        insert(new alarme());//Liga alarme 
+        System.out.println( "    Intrusos ou intruso detectados");
+end
+
+/////////////////////////////////////////////////////////////////////////////
+
+rule "detetado onde esta intrusos"
+salience 80
+    when
+        $d: Divisao()
+        $i: intrusos(divisao == $d, detetado == false)
+        $cam: camara(divisao == $d, ligado == true)
+    then
+    $i.setDetetado(true);
+    update($i);
+    System.out.println( "    Intrusos detetado na divisão " +$d.getNome());
+end
+
+/////////////////////////////////////////////////////////////////////////////
+// melhorar para codigo; 
+
+rule "desativar alarme"
+salience 75
+	when
+		$d: Divisao()
+		$i: codigo(divisao == $d, ligado == true)
+		$a: alarme()
+	then
+		System.out.println( "o codigo de dezaticvacao do alarme foi ativo");
+		retract($a);
+end
+
+
+
+rule "Liga para a policia se detetado intrusos"
+salience 70
+	when
+		not ligacao()
+		exists intrusos()//Há intrusos
+		$d: Divisao()
+		$i: intrusos(divisao == $d, detetado == true)
+		 exists alarme()
+    then
+    insert(new ligacao());
+    System.out.println( "liga para a policia a passar a informacao");
+end
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+rule "detetar animaes"
+salience 60
+    when
+        $d: Divisao()
+        $i: animal(divisao == $d)
+        $cam: camara(divisao == $d, ligado == true)
+    then
+    System.out.println( $i.getNome()+ " detetado na divisão " +$d.getNome());
+end
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+rule "camara desligada"
+salience 50
+	when
+		$d: Divisao()
+        $cam: camara(divisao == $d, ligado == false)
+	then
+		System.out.println( "msg para o dono, camara na divicao " +$d.getNome()+" esta desliga ou avariada");
+end
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+rule "detetar avaria" 
+salience 30
+	when
+		not intrusos()
+		$a: alarme()
+	then
+		retract($a);
+		System.out.println("Alarme desligado");
+		
+end
+
+//////////////////////////////////////////////////////////////////////////
+
+rule "vidro partido sem invasao"
+salience 22
+    when
+    	not intrusos()
+        exists somVidroPartir();
+    then
+        System.out.println( "avisar o dono que pode ser ter um vidro partido");
+end
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+rule "Tudo Ok"
+	salience 20
+	when
+		not intrusos()
+		not alarme()
+	then
+		System.out.println( "esta tudo ok");
+end
+
+/////////////////////////////////////////////////////////////////////////////
